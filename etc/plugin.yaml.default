@@ -1,30 +1,34 @@
 %YAML 1.1
 ---
-BackendServer:
-    plugin_name: backend
-    #updates_allowed: False
+database:
+    plugin_name: database
+    driver: sqlite3
+    connect:
+    -   database:./var/db/smarthomeng.db
+    -   check_same_thread:0
 
-cli:
-    plugin_name: cli
-    ip: 0.0.0.0
-    #port: 2323
-    update: True
-    #hashed_password: 1245a9633edf47b7091f37c4d294b5be5a9936c81c5359b16d1c48337$
+#database_mysql:
+#   plugin_name: database
+#   instance: nas
+#   precision: 4
+#   driver: pymysql
+#   connect:
+#     - host:localhost
+#     - user:smarthome
+#     - passwd:smarthome
+#     - db:smarthome
+#     - port:3306
 
 # Bereitstellung eines Websockets zur Kommunikation zwischen SmartVISU und SmartHomeNG
 websocket:
     plugin_name: visu_websocket
     #ip: 0.0.0.0
     #port: 2424
-    #tls: no
+    #tls: False
     #wsproto: 4
     #acl: rw
 
-# memlog:
-#     plugin_name: memlog
-#     name: alert
-
-# knx:
+#knx:
 #     plugin_name: knx
 #     host: 127.0.0.1
 #     port: 6720
@@ -33,7 +37,17 @@ websocket:
 #     date_ga: 6/0/1    # default none
 #     busmonitor: True  # log all knx messages, default false
 #     readonly: True    ## don't write to knx bus, default false"
-#     instance: default
+
+#cli:
+#    plugin_name: cli
+#    ip: 0.0.0.0
+#    #port: 2323
+#    update: True
+#    #hashed_password: 1245a9633edf47b7091f37c4d294b5be5a9936c81c5359b16d1c48337$
+
+# memlog:
+#     plugin_name: memlog
+#     name: alert
 
 # ow:
 #     plugin_name: onewire
@@ -62,21 +76,6 @@ websocket:
 #    laststate_name_manually_locked: gesperrt
 #    laststate_name_suspended: ausgesetzt
 #    log_maxage: 1
-
-#database_mysql:
-#   plugin_name: database
-#   instance: nas
-#   precision: 4
-#   driver: pymysql
-#   connect:
-#     - host:localhost
-#     - user:smarthome
-#     - passwd:smarthome
-#     - db:smarthome
-#     - port:3306
-
-# sqlite:
-#     plugin_name: sqlite_visu2_8
 
 # apcups:
 #     plugin_name: apcups
@@ -166,7 +165,7 @@ websocket:
 
 # simulation:
 #     plugin_name: simulation
-#     data_file: /usr/local/smarthome/var/db/simulation.txt
+#     data_file: ./var/db/simulation.txt
 
 # nw:
 #     plugin_name: network

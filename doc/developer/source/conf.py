@@ -10,12 +10,14 @@ import os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 # sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../../modules/admin/'))
 sys.path.insert(0, os.path.abspath('../../../'))
 print('Looking within following pathes:')
 for i in sys.path:
     print(i)
 
 import bin.shngversion as shngversion
+import plugins as pluginsversion
 
 import datetime
 now = datetime.datetime.now()
@@ -32,22 +34,23 @@ today = str(now.day) + '. ' + calendar.month_name[now.month] + ' ' + str(now.yea
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 # Disabled: , 'sphinx.ext.intersphinx'
 extensions = [
-  'sphinx.ext.autodoc', 
+  'sphinx.ext.autodoc',
   'sphinx.ext.autosummary',
-  'sphinx.ext.todo', 
-  'sphinx.ext.ifconfig', 
+  'sphinx.ext.todo',
+  'sphinx.ext.ifconfig',
   'sphinx.ext.viewcode',
-  'sphinx.ext.githubpages' ]
+  'sphinx.ext.githubpages',
+  'recommonmark']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 from recommonmark.parser import CommonMarkParser
 
-source_parsers = { '.md': CommonMarkParser }
+# deprecated: source_parsers = { '.md': CommonMarkParser }
 
 # The suffix of source filenames.
-source_suffix = ['.md','.rst']
+# deprecated: source_suffix = ['.md','.rst']
 
 # The encoding of source files.
 source_encoding = 'utf-8-sig'
@@ -58,19 +61,21 @@ master_doc = 'index'
 # To get rid of the ¶ sign on descriptions over a box
 html_add_permalinks = ""
 
-# General information about the project.
-#project = u'SmartHomeNG'
-project = u'Developer Documentation'
-#copyright = u'2011-2013, Marcus Popp; since 2016 SmartHomeNG Team'
-#copyright = u'2016-2017 SmartHomeNG Team, based on smarthome.py © 2011-2014 Marcus Popp'
-copyright = u'2016-2018 SmartHomeNG Team, SmartHomeNG is based on smarthome.py © Marcus Popp'
-
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
 #version = '1.3c'
+version = shngversion.get_shng_main_version()
+
+# General information about the project.
+#project = u'SmartHomeNG'
+project = u'Developer Documentation v' + version
+#copyright = u'2011-2013, Marcus Popp; since 2016 SmartHomeNG Team'
+#copyright = u'2016-2017 SmartHomeNG Team, based on smarthome.py © 2011-2014 Marcus Popp'
+copyright = u'2016-2020 SmartHomeNG Team, SmartHomeNG is based on smarthome.py © Marcus Popp'
+
 if os.path.isfile(os.getcwd()+'/doc_version.flg'):
     release = '1.4.x'
     with open(os.getcwd()+'/doc_version.flg') as f:
@@ -106,7 +111,7 @@ release += ')'
 # directories to ignore when looking for source files.
 #exclude_patterns = ['plugins/backend_shng_1_3', 'plugins/backend/static', '._*']
 #exclude_patterns = ['plugins/deprecated_plugins', 'plugins/backend_shng_1_3/static', 'plugins/backend/static', '**/._*md']
-exclude_patterns = ['plugins/deprecated_plugins', 'modules/http/webif/gstatic', 'plugins/blockly/webif/static', 'plugins/*/_pv_*', '**/_pv_*', '**/._*md', '**/user_doc.*']
+exclude_patterns = ['**/._*', '**/priv_*', 'plugins/deprecated_plugins', 'modules/http/webif/gstatic', 'plugins/blockly/webif/static', '**/_pv_*', '**/pv_*', '**/._*md', '**/user_doc', '**/user_doc.*']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -131,7 +136,8 @@ pygments_style = 'sphinx'
 # -- Options for HTML output ---------------------------------------------------
 
 def setup(app):
-    app.add_stylesheet('custom.css')
+    # deprecated in Sphinx 4: app.add_stylesheet('custom.css')
+    app.add_css_file('custom.css')
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.

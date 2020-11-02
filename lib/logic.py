@@ -453,7 +453,7 @@ class Logics():
         return mylogic.enabled
 
 
-    def trigger_logic(self, name, by='unknown'):
+    def trigger_logic(self, name, by='unknown', source=None, value=None):
         """
         Trigger a logic
         """
@@ -461,7 +461,7 @@ class Logics():
         if name in self.return_loaded_logics():
             if by == 'unknown':
                 by = 'Backend'
-            self.scheduler.trigger(self._logicname_prefix+name, by=by)
+            self.scheduler.trigger(self._logicname_prefix+name, by=by, source=source, value=value)
         else:
             logger.warning("trigger_logic: Logic '{}' not found/loaded".format(name))
 
@@ -939,11 +939,12 @@ class Logic():
     _logicname_prefix = 'logics.'
 
     def __init__(self, smarthome, name, attributes, logics):
-        self._sh = smarthome
+        self.sh = smarthome               # initialize to use 'logic.sh' in logics
+        self.logger = logger              # initialize to use 'logic.logger' in logics
         self.name = name
+        self.shtime = logics.shtime
         self.lname = "Logic '"+name+"'"   # string is to be used in item assignements sh.xxx(<value>, logic.lname)
         self._logics = logics             # access to the logics api
-        self.shtime = self._logics.shtime
         self.enabled = True if 'enabled' not in attributes else Utils.to_bool(attributes['enabled'])
         self.crontab = None
         self.cycle = None
@@ -1018,7 +1019,7 @@ class Logic():
         if self.enabled:
             self.scheduler.trigger(self._logicname_prefix+self.name, self, prio=self.prio, by=by, source=source, dest=dest, value=value, dt=dt)
         else:
-            logger.warning("trigger: Logic '{}' not triggered because it is disabled".format(self.name))
+            logger.info("trigger: Logic '{}' not triggered because it is disabled".format(self.name))
 
     def _generate_bytecode(self):
         if hasattr(self, 'pathname'):

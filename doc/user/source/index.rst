@@ -1,8 +1,8 @@
-:tocdepth: 6
+:tocdepth: 1
 
-###########
+===========
 SmartHomeNG
-###########
+===========
 
 Anwenderdokumentation
 =====================
@@ -13,20 +13,25 @@ Gerätes wird durch das Metagateway so um viele zusätzliche Schnittstellen erwe
 möglich dass die Klingel mit der Musikanlage und TV spricht, und dessen Wiedergabe unterbricht
 oder bei Abwesenheit eine Nachricht per Email verschickt.
 
-Viele haben in die Konfiguration Ihres Smarthome.py Systems viel Arbeit gesteckt und wollen
-das jetzt nicht aufgeben und wieder etwas komplett neues machen. So wurde ein Fork SmartHomeNG
-erstellt um die Fortentwicklungen im System wieder zusammenzuführen und eine Basis für
-Weiterentwicklungen zu stellen.
+Das System kann flexibel durch Plugins erweitert werden, wobei die Plugins in folgende Kategorien klassifiziert sind:
 
-Diese Dokumentation reflektiert das aktuelle Release |release|.
+- **Gateway**: Anbindung von Devices eines Bus-Systems wie KNX, HomeMatic, EnOcean, 1-wire, DMX, Philips Hue, ...
+- **Interface**: Anbindung einzelner Devices wie AVM Fritzboxen, Heizungssteuerungen, div. AV Devices, ...
+- **Web-/Cloud-Dienst**: Anbindung an diverse Web- bzw. Cloud-Dienste, wie Mail, Prowl, Wetter-Dienste, Alexa, ...
+- **Protokoll**: Unterstützung diverser Protokolle wie TCP/IP, MQTT, XMPP
+- **System**: Systemnahe Erweiterungen wie Datenbank Anbindung, Visu Anbindung, universelle Zeitschaltuhr,
+  Stateengine (endlicher Automat), ...
 
+Diese Dokumentation reflektiert das aktuelle Release:
+
+- **Version des Core**: |release|
+- **Version der Plugins**: |version|
 
 Die Entwickler-Dokumentation (für Entwickler von Plugins und den Core von SmartHomeNG), sowie
 die READMEs der Plugins sind in Englisch gehalten.
 
-Die hier entstehende Anwenderdokumentation ist auf Deutsch. Später wird sie zweisprachig Deutsch/Englisch
-zur Verfügung stehen. Sie wird sich aus Inhalten speisen, die zurzeit im `SmartHomeNG Wiki <https://github.com/smarthomeNG/smarthome/wiki>`_
-zur Verfügung stehen.
+Die Anwenderdokumentation steht auf Deutsch zur Verfügung. Die Entwicklerdokumentation hingegen, ist in Englisch
+verfasst.
 
 Hilfe zu SmartHomeNG gibt es im `Supportforum im KNX-User-Forum <https://knx-user-forum.de/forum/supportforen/smarthome-py>`_
 oder im `Chat auf gitter.im <https://gitter.im/smarthomeNG/smarthome>`_ .
@@ -36,13 +41,13 @@ oder im `Chat auf gitter.im <https://gitter.im/smarthomeNG/smarthome>`_ .
    **Anmerkungen** und **Änderungswünsche** zu dieser Anwenderdokumentation bitte auf
    `dieser Feedback Seite <https://www.smarthomeng.de/feedback-zur-dokumentation>`_ hinterlassen.
 
-.. [#f1] SmartHomeNG © Copyright 2016-2019 SmartHomeNG Team, basiert auf smarthome.py © 2011-2014 Marcus Popp.
+.. [#f1] SmartHomeNG © Copyright 2016-2020 SmartHomeNG Team, basiert auf smarthome.py © 2011-2014 Marcus Popp.
 
+..    :titlesonly:
 
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 1
    :hidden:
-   :titlesonly:
 
    einleitung.md
    installation/installation.rst
@@ -51,6 +56,7 @@ oder im `Chat auf gitter.im <https://gitter.im/smarthomeNG/smarthome>`_ .
    logiken/logics.rst
    visualisierung/visualisierung.rst
    admin/admin.rst
+   beispiele/beispiele.rst
    tools/tools.rst
    fehlersuche
    faq
@@ -58,5 +64,6 @@ oder im `Chat auf gitter.im <https://gitter.im/smarthomeNG/smarthome>`_ .
    release/release
    genindex
    impressum
+   datenschutz
 
 

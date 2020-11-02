@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # vim: set encoding=utf-8 tabstop=4 softtabstop=4 shiftwidth=4 expandtab
 #########################################################################
-#  Copyright 2018 <AUTHOR>                                        <EMAIL>
+#  Copyright 2020-      <AUTHOR>                                  <EMAIL>
 #########################################################################
-#  This file is part of SmartHomeNG.   
+#  This file is part of SmartHomeNG.
+#  https://www.smarthomeNG.de
+#  https://knx-user-forum.de/forum/supportforen/smarthome-py
 #
-#  Sample plugin for new plugins to run with SmartHomeNG version 1.4 and
+#  Sample plugin for new plugins to run with SmartHomeNG version 1.5 and
 #  upwards.
 #
 #  SmartHomeNG is free software: you can redistribute it and/or modify
@@ -23,8 +25,10 @@
 #
 #########################################################################
 
-from lib.module import Modules
 from lib.model.smartplugin import *
+from lib.item import Items
+
+from .webif import WebInterface
 
 
 # If a needed package is imported, which might be not installed in the Python environment,
@@ -37,39 +41,30 @@ class SamplePlugin(SmartPlugin):
     the update functions for the items
     """
 
-    PLUGIN_VERSION = '1.6.0'
+    PLUGIN_VERSION = '1.7.1'    # (must match the version specified in plugin.yaml), use '1.0.0' for your initial plugin Release
 
-    def __init__(self, sh, *args, **kwargs):
+    def __init__(self, sh):
         """
-        Initalizes the plugin. The parameters describe for this method are pulled from the entry in plugin.conf.
-
-        :param sh:  **Deprecated**: The instance of the smarthome object. For SmartHomeNG versions 1.4 and up: **Don't use it**!
-        :param *args: **Deprecated**: Old way of passing parameter values. For SmartHomeNG versions 1.4 and up: **Don't use it**!
-        :param **kwargs:**Deprecated**: Old way of passing parameter values. For SmartHomeNG versions 1.4 and up: **Don't use it**!
+        Initalizes the plugin.
 
         If you need the sh object at all, use the method self.get_sh() to get it. There should be almost no need for
         a reference to the sh object any more.
 
-        The parameters *args and **kwargs are the old way of passing parameters. They are deprecated. They are imlemented
-        to support oder plugins. Plugins for SmartHomeNG v1.4 and beyond should use the new way of getting parameter values:
-        use the SmartPlugin method get_parameter_value(parameter_name) instead. Anywhere within the Plugin you can get
+        Plugins have to use the new way of getting parameter values:
+        use the SmartPlugin method get_parameter_value(parameter_name). Anywhere within the Plugin you can get
         the configured (and checked) value for a parameter by calling self.get_parameter_value(parameter_name). It
         returns the value in the datatype that is defined in the metadata.
         """
+
+        # Call init code of parent class (SmartPlugin)
+        super().__init__()
+
         from bin.smarthome import VERSION
         if '.'.join(VERSION.split('.', 2)[:2]) <= '1.5':
             self.logger = logging.getLogger(__name__)
 
-        # If an package import with try/except is done, handle an import error like this:
-
-        # Exit if the required package(s) could not be imported
-        # if not REQUIRED_PACKAGE_IMPORTED:
-        #     self.logger.error("Unable to import Python package '<exotic package>'")
-        #     self._init_complete = False
-        #     return
-
         # get the parameters for the plugin (as defined in metadata plugin.yaml):
-        #   self.param1 = self.get_parameter_value('param1')
+        # self.param1 = self.get_parameter_value('param1')
 
         # cycle time in seconds, only needed, if hardware/interface needs to be
         # polled for value changes by adding a scheduler entry in the run method of this plugin
@@ -82,11 +77,8 @@ class SamplePlugin(SmartPlugin):
         #   self._init_complete = False
         #   return
 
-        # The following part of the __init__ method is only needed, if a webinterface is being implemented:
-
         # if plugin should start even without web interface
-        self.init_webinterface()
-
+        self.init_webinterface(WebInterface)
         # if plugin should not start without web interface
         # if not self.init_webinterface():
         #     self._init_complete = False
@@ -98,7 +90,7 @@ class SamplePlugin(SmartPlugin):
         Run method for the plugin
         """
         self.logger.debug("Run method called")
-        # setup scheduler for device poll loop   (disable the following line, if you don't need to poll the device. Rember to comment the self_cycle statement in __init__ as well
+        # setup scheduler for device poll loop   (disable the following line, if you don't need to poll the device. Rember to comment the self_cycle statement in __init__ as well)
         self.scheduler_add('poll_device', self.poll_device, cycle=self._cycle)
 
         self.alive = True
@@ -110,6 +102,7 @@ class SamplePlugin(SmartPlugin):
         Stop method for the plugin
         """
         self.logger.debug("Stop method called")
+        self.scheduler_remove('poll_device')
         self.alive = False
 
     def parse_item(self, item):
@@ -153,8 +146,9 @@ class SamplePlugin(SmartPlugin):
         :param source: if given it represents the source
         :param dest: if given it represents the dest
         """
-        if caller != self.get_shortname():
-            # code to execute, only if the item has not been changed by this this plugin:
+        if self.alive and caller != self.get_shortname():
+            # code to execute if the plugin is not stopped
+            # and only, if the item has not been changed by this this plugin:
             self.logger.info("Update item: {}, item has been changed outside this plugin".format(item.id()))
 
             if self.has_iattr(item.conf, 'foo_itemtag'):
@@ -171,7 +165,7 @@ class SamplePlugin(SmartPlugin):
 
         This method is only needed, if the device (hardware/interface) does not propagate
         changes on it's own, but has to be polled to get the actual status.
-        It is called by the scheduler.
+        It is called by the scheduler which is set within run() method.
         """
         # # get the value from the device
         # device_value = ...
@@ -189,82 +183,4 @@ class SamplePlugin(SmartPlugin):
         #     item(device_value, self.get_shortname(), source=device_source_id)
         pass
 
-    def init_webinterface(self):
-        """"
-        Initialize the web interface for this plugin
-
-        This method is only needed if the plugin is implementing a web interface
-        """
-        try:
-            self.mod_http = Modules.get_instance().get_module(
-                'http')  # try/except to handle running in a core version that does not support modules
-        except:
-            self.mod_http = None
-        if self.mod_http == None:
-            self.logger.error("Not initializing the web interface")
-            return False
-
-        import sys
-        if not "SmartPluginWebIf" in list(sys.modules['lib.model.smartplugin'].__dict__):
-            self.logger.warning("Web interface needs SmartHomeNG v1.5 and up. Not initializing the web interface")
-            return False
-
-        # set application configuration for cherrypy
-        webif_dir = self.path_join(self.get_plugin_dir(), 'webif')
-        config = {
-            '/': {
-                'tools.staticdir.root': webif_dir,
-            },
-            '/static': {
-                'tools.staticdir.on': True,
-                'tools.staticdir.dir': 'static'
-            }
-        }
-
-        # Register the web interface as a cherrypy app
-        self.mod_http.register_webif(WebInterface(webif_dir, self),
-                                     self.get_shortname(),
-                                     config,
-                                     self.get_classname(), self.get_instance_name(),
-                                     description='')
-
-        return True
-
-
-# ------------------------------------------
-#    Webinterface of the plugin
-# ------------------------------------------
-
-import cherrypy
-from jinja2 import Environment, FileSystemLoader
-
-
-class WebInterface(SmartPluginWebIf):
-
-    def __init__(self, webif_dir, plugin):
-        """
-        Initialization of instance of class WebInterface
-
-        :param webif_dir: directory where the webinterface of the plugin resides
-        :param plugin: instance of the plugin
-        :type webif_dir: str
-        :type plugin: object
-        """
-        self.logger = logging.getLogger(__name__)
-        self.webif_dir = webif_dir
-        self.plugin = plugin
-        self.tplenv = self.init_template_environment()
-
-    @cherrypy.expose
-    def index(self, reload=None):
-        """
-        Build index.html for cherrypy
-
-        Render the template and return the html file to be delivered to the browser
-
-        :return: contents of the template after beeing rendered 
-        """
-        tmpl = self.tplenv.get_template('index.html')
-        # add values to be passed to the Jinja2 template eg: tmpl.render(p=self.plugin, interface=interface, ...)
-        return tmpl.render(p=self.plugin)
 

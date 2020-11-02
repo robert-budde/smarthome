@@ -28,12 +28,14 @@ import cherrypy
 from .rest import RESTResource
 
 import bin.shngversion
+import lib.daemon
+import lib.backup as backup
 
 
 # ======================================================================
 #  Functions to be moved to utils
 #
-def get_process_info(command, wait=True):
+def get_process_info(command, wait=True, append_error=False):
     """
     returns output from executing a given command via the shell.
     """
@@ -41,7 +43,10 @@ def get_process_info(command, wait=True):
     import subprocess
 
     ## call date command ##
-    p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
+    if append_error:
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    else:
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
 
     # Talk with date command i.e. read data from stdout and stderr. Store this info in tuple ##
     # Interact with process: Send data to stdin. Read data from stdout and stderr, until end-of-file is reached.
@@ -52,6 +57,7 @@ def get_process_info(command, wait=True):
     if wait:
         ## Wait for date to terminate. Get return returncode ##
         p_status = p.wait()
+
     return str(result, encoding='utf-8', errors='strict')
 
 
@@ -108,8 +114,10 @@ class ServerController(RESTResource):
         response['client_ip'] = client_ip
         response['itemtree_fullpath'] = self.module.itemtree_fullpath
         response['itemtree_searchstart'] = self.module.itemtree_searchstart
-        response['tz'] = self.module.shtime.tz
+        response['tz'] = self.module.shtime.tz()
         response['tzname'] = str(self.module.shtime.tzname())
+        response['tznameST'] = str(self.module.shtime.tznameST())
+        response['tznameDST'] = str(self.module.shtime.tznameDST())
         response['core_branch'] = bin.shngversion.get_shng_branch()
         response['plugins_branch'] = bin.shngversion.get_plugins_branch()
         response['websocket_host'] = self.module.websocket_host
@@ -119,6 +127,8 @@ class ServerController(RESTResource):
         response['daemon_ow'] = self.get_1wire_daemon()
         response['daemon_mqtt'] = self.get_mqtt_daemon()
         response['daemon_node_red'] = self.get_node_red_daemon()
+        response['last_backup'] = backup.get_lastbackuptime()
+        # response['pid'] = str(lib.daemon.read_pidfile(self._sh._pidfile))
         self.logger.info("ServerController.onfo(): response = {}".format(response))
         return json.dumps(response)
 
@@ -139,6 +149,12 @@ class ServerController(RESTResource):
                 daemon += ' and knxd'
             else:
                 daemon = 'knxd'
+                # get version of installed knx daemon (knxd v0.14.30 outputs version to stderr instead of stdout)
+                wrk = get_process_info("knxd -l?V|grep knxd", append_error=True)
+                wrk = wrk.split()
+                wrk = wrk[1].split(':')
+                if wrk != []:
+                    daemon += ' v' + wrk[0]
         return daemon
 
 
@@ -157,8 +173,14 @@ class ServerController(RESTResource):
         Tests it 1wire are running
         """
         daemon = 'SERVICES.INACTIVE'
+        # test id mqtt broker is running
         if get_process_info("ps cax|grep mosquitto") != '':
             daemon = 'mosquitto'
+            # get version of installed mosquitto broker
+            wrk = get_process_info("/usr/sbin/mosquitto -h|grep version")
+            wrk = wrk.split()
+            if wrk != []:
+                daemon += ' v' + wrk[2]
         return daemon
 
 
@@ -169,6 +191,11 @@ class ServerController(RESTResource):
         daemon = 'SERVICES.INACTIVE'
         if get_process_info("ps cax|grep node-red") != '':
             daemon = 'node-red'
+            # get version of installed node-red
+            wrk = get_process_info("node-red --help|grep Node-RED")
+            wrk = wrk.split()
+            if wrk != []:
+                daemon += ' ' + wrk[1]
         return daemon
 
 

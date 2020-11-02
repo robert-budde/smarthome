@@ -32,8 +32,10 @@ The result is printed to stdout
 import os
 import argparse
 
+VERSION = '1.7.2'
+
 print('')
-print(os.path.basename(__file__) + ' - Checks the care status of plugin metadata')
+print(os.path.basename(__file__) + ' v' + VERSION + ' - Checks the care status of plugin metadata')
 print('')
 start_dir = os.getcwd()
 
@@ -44,7 +46,6 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, '..')
 sys.path.insert(0, '../lib')
 import shyaml
-
 
 
 type_unclassified = 'unclassified'
@@ -65,6 +66,9 @@ MISSING_TEXT = 'Missing'
 def get_local_pluginlist():
     plglist = os.listdir('.')
 
+    for entry in plglist:
+        if os.path.isfile(entry):
+            plglist.remove(entry)
     for entry in plglist:
         if entry[0] in ['.' ,'_'] or entry == 'deprecated_plugins':
             plglist.remove(entry)
@@ -150,11 +154,12 @@ def list_plugins(option):
             return
         if metadata.get('plugin', None) == None:
             sectionPlg = MISSING_TEXT
+            plgstate = 'NOMETA'
         else:
             sectionPlg = 'Ok'
             version = metadata['plugin'].get('version', '-')
             plgstate = metadata['plugin'].get('state', '-')
-            if not plgstate in ['qa-passed', 'ready', 'develop', 'deprecated', '-']:
+            if not plgstate in ['qa-passed', 'ready', 'develop', 'deprecated']:
                 plgstate = 'INVALID'
         plgtype = get_plugintype(plg)
         if plgtype == 'Smart':
@@ -210,7 +215,7 @@ def list_plugins(option):
 
         if (option == 'all') or \
            (option == plgtype.lower()) or \
-           (option == 'inc' and (sectionPlg == MISSING_TEXT or sectionParam == MISSING_TEXT or sectionIAttr == MISSING_TEXT or sectionFunc == MISSING_TEXT or sectionLogics == MISSING_TEXT)) or \
+           (option == 'inc' and (plgstate == 'INVALID' or sectionPlg == MISSING_TEXT or sectionParam == MISSING_TEXT or sectionIAttr == MISSING_TEXT or sectionFunc == MISSING_TEXT or sectionLogics == MISSING_TEXT)) or \
            (option == 'compl' and (plgtype.lower() != 'classic' and sectionPlg != MISSING_TEXT and sectionParam != MISSING_TEXT and sectionIAttr != MISSING_TEXT and sectionFunc != MISSING_TEXT) and (sectionLogics != MISSING_TEXT)) or \
            (option == 'inc_para' and sectionParam == MISSING_TEXT) or (option == 'inc_attr' and sectionIAttr == MISSING_TEXT):
             if not header_displayed:
@@ -532,23 +537,26 @@ def check_metadata(plg, with_description, check_quiet=False, only_inc=False, lis
 
     if (plg_type != 'classic' and not list_classic):
 
-        if metadata['plugin'].get('state', None) == None:
-            disp_error('No development state given for the plugin', "Add 'state:' to the plugin section and set it to one of the following values ['develop', 'ready', 'qa-passed']", "The state'qa-passed' should only be set by the shNG core team")
-        if metadata['plugin'].get('multi_instance', None) == None:
-            disp_warning('It is not documented if wether the plugin is multi-instance capable or not', "Add 'multi_instance:' to the plugin section")
+        if metadata.get('plugin', None) is None:
+            disp_error("No section 'plugin' in metadata found")
         else:
-            if not(metadata['plugin'].get('multi_instance', None) in [True, False]):
-                disp_error('multi_instance has to be True or False')
-        if metadata['plugin'].get('restartable', None) == None:
-            disp_hint('It is not documented if wether the plugin is restartable or not [stop() and run()]', "Add 'restartable:' to the plugin section")
-        else:
-            if not(metadata['plugin'].get('restartable', None) in [True, False, 'True', 'False', 'unknown']):
-                disp_error('restartable has to be True, False or unknown')
-        if metadata['plugin'].get('sh_minversion', None) == None:
-            disp_warning('No minimum version of the SmartHomeNG core given that is needed to run the plugin', "Add 'sh_minversion:' to the plugin section")
+            if metadata['plugin'].get('state', None) == None:
+                disp_error('No development state given for the plugin', "Add 'state:' to the plugin section and set it to one of the following values ['develop', 'ready', 'qa-passed']", "The state'qa-passed' should only be set by the shNG core team")
+            if metadata['plugin'].get('multi_instance', None) == None:
+                disp_warning('It is not documented if wether the plugin is multi-instance capable or not', "Add 'multi_instance:' to the plugin section")
+            else:
+                if not(metadata['plugin'].get('multi_instance', None) in [True, False]):
+                    disp_error('multi_instance has to be True or False')
+            if metadata['plugin'].get('restartable', None) == None:
+                disp_hint('It is not documented if wether the plugin is restartable or not [stop() and run()]', "Add 'restartable:' to the plugin section")
+            else:
+                if not(metadata['plugin'].get('restartable', None) in [True, False, 'True', 'False', 'unknown']):
+                    disp_error('restartable has to be True, False or unknown')
+            if metadata['plugin'].get('sh_minversion', None) == None:
+                disp_warning('No minimum version of the SmartHomeNG core given that is needed to run the plugin', "Add 'sh_minversion:' to the plugin section")
 
-        if metadata['plugin'].get('tester', None) == None:
-            disp_hint('The tester(s) of the plugin are not documented', "Add 'tester:' to the plugin section")
+            if metadata['plugin'].get('tester', None) == None:
+                disp_hint('The tester(s) of the plugin are not documented', "Add 'tester:' to the plugin section")
 
         # Checking parameter metadata
         if metadata.get('parameters', None) == None:
@@ -566,7 +574,7 @@ def check_metadata(plg, with_description, check_quiet=False, only_inc=False, lis
 
         # Checking function metadata
         if metadata.get('plugin_functions', None) == None:
-            disp_error("No public functions of the attribute defined in metadata", "If the plugin defines no public functions, document this by creating an empty section. Write 'plugin_functions: NONE' to the metadata file.")
+            disp_error("No public functions of the plugin defined in metadata", "If the plugin defines no public functions, document this by creating an empty section. Write 'plugin_functions: NONE' to the metadata file.")
 
         # Checking logic parameter metadata
         if metadata.get('logic_parameters', None) == None:
@@ -583,6 +591,8 @@ def check_metadata(plg, with_description, check_quiet=False, only_inc=False, lis
                     if not is_dict(par_dict):
                         disp_error("Definition of parameter '{}' is not a dict".format(par), '')
                     else:
+                        if par_dict.get('mandatory', None) != None and par_dict.get('default', None) != None:
+                            disp_error("parameter '{}': mandatory and default cannot be used together".format(par), "If mandatory and a default value are specified togeather, mandatory has no effect, since a value for the parameter is already specified (the default value).")
                         test_description('parameter', par, par_dict.get('description', None))
 
         if metadata.get('item_attributes', None) != None:
@@ -592,6 +602,8 @@ def check_metadata(plg, with_description, check_quiet=False, only_inc=False, lis
                     if not is_dict(par_dict):
                         disp_error("Definition of item_attribute '{}' is not a dict".format(par), '')
                     else:
+                        if par_dict.get('mandatory', None) != None and par_dict.get('default', None) != None:
+                            disp_error("item '{}': mandatory and default cannot be used together".format(par), "If mandatory and a default value are specified togeather, mandatory has no effect, since a value for the parameter is already specified (the default value).")
                         test_description('item attribute', par, par_dict.get('description', None))
 
         if metadata.get('plugin_functions', None) != None:
